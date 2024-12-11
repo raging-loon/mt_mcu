@@ -1,0 +1,3 @@
+[submodule "components/ESP32_TFT_library"]
+	path = components/ESP32_TFT_library
+	url = https://github.com/loboris/ESP32_TFT_library
