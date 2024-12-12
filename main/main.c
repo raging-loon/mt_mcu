@@ -2,6 +2,8 @@
 #include <string.h>
 #include <freertos/FreeRTOS.h>
 #include "io/voltage_reader.h"
+#include "mtcp/mtcp_interface.h"
+
 void app_main(void)
 {
  voltage_reader_t vrt = {
@@ -18,18 +20,34 @@ void app_main(void)
         return;
     }
 
-      char buffer[32];
+    mtcp_interface_t iface = {.uart_port = UART_NUM_2};
 
+    mtcp_if_cfg_t cfg = {
+        .queue_size = 10,
+        .rx_buffer_size = 1024 * 2,
+        .tx_buffer_size = 1024 * 2,
+        .rx_gpio_num = 16,
+        .tx_gpio_num = 17
+    };
+
+    if(mtcp_if_init(&iface, &cfg) != ESP_OK)
+    {
+        printf("failed to initialize MTCP\n");
+        return;
+    }
+
+      char buffer[32];
     while (1) 
     {
         float vin = vrt_read(&vrt);
 
         memset(buffer, 0, sizeof(buffer));
 
-        int length = snprintf(buffer, sizeof(buffer), "Voltage: %.2f", vin);
-        
-        printf("%s\n",buffer);
-
+        int length = snprintf(buffer, sizeof(buffer), "Voltage: %.2f\r\n", vin);
+        if(iface.is_active)
+            uart_write_bytes(iface.uart_port, buffer, length);
+    // ESP_LOGI(TAG, "MTCP USB was %s", mif->is_active ? "plugged in" : "unplugged");
+        printf("USB %s\n", iface.is_active ? "plugged in" : "unplugged");
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 
