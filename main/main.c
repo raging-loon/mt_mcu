@@ -23,14 +23,15 @@ void app_main(void)
         return;
     }
 
-    mtcp_interface_t iface = {.uart_port = UART_NUM_2};
+    mtcp_interface_t iface;
 
     mtcp_if_cfg_t cfg = {
         .queue_size = 10,
         .rx_buffer_size = 1024 * 2,
         .tx_buffer_size = 1024 * 2,
         .rx_gpio_num = 16,
-        .tx_gpio_num = 17
+        .tx_gpio_num = 17,
+        .uart_port = UART_NUM_2
     };
 
     if(mtcp_if_init(&iface, &cfg) != ESP_OK)
@@ -47,7 +48,7 @@ void app_main(void)
         memset(buffer, 0, sizeof(buffer));
 
         int length = snprintf(buffer, sizeof(buffer), "Voltage: %.2f\r\n", vin);
-        if(iface.is_active)
+        if((iface.flags & MTCP_IF_FLAG_CONNECTED) == MTCP_IF_FLAG_CONNECTED)
             uart_write_bytes(iface.uart_port, buffer, length);
         
 

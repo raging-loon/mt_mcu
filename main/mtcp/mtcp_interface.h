@@ -8,6 +8,7 @@
 #define MTCP_GPIO_CTS_MON_PIN           22
 
 typedef struct {
+    uart_port_t uart_port;
     int         tx_gpio_num;
     int         rx_gpio_num;
     int         tx_buffer_size;
@@ -57,5 +58,5 @@ esp_err_t mtcp_if_init(mtcp_interface_t* mif, const mtcp_if_cfg_t* ifcfg);
 ///
 esp_err_t mtcp_if_destroy(mtcp_interface_t* mif);
 
-
+void mtcp_if_handle_connection(mtcp_interface_t* mif);
 #endif // MTCP_MTCP_INTERFACE_H_

@@ -25,18 +25,18 @@ static esp_err_t mtcp_if_init_uart(mtcp_interface_t* mif, const mtcp_if_cfg_t* i
         .rx_flow_ctrl_thresh    = 122
     };
 
-    esp_err_t stat = uart_param_config(mif->uart_port, &cfg);
+    esp_err_t stat = uart_param_config(ifcfg->uart_port, &cfg);
 
     if(stat != ESP_OK)
         return stat;
 
-    stat = uart_set_pin(mif->uart_port, ifcfg->tx_gpio_num, ifcfg->rx_gpio_num, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+    stat = uart_set_pin(ifcfg->uart_port, ifcfg->tx_gpio_num, ifcfg->rx_gpio_num, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
     
     if(stat != ESP_OK)
         return stat;
     
     stat = uart_driver_install(
-        mif->uart_port, 
+        ifcfg->uart_port, 
         ifcfg->rx_buffer_size, 
         ifcfg->tx_buffer_size, 
         ifcfg->queue_size, 
@@ -50,6 +50,7 @@ static esp_err_t mtcp_if_init_uart(mtcp_interface_t* mif, const mtcp_if_cfg_t* i
     mif->queue_size             = ifcfg->queue_size;
     mif->tx_buffer_size         = ifcfg->tx_buffer_size;
     mif->rx_buffer_size         = ifcfg->rx_buffer_size;
+    mif->uart_port              = ifcfg->uart_port;
     return ESP_OK;
 }
 
