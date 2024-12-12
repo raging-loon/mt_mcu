@@ -126,5 +126,11 @@ esp_err_t mtcp_destroy_interface(mtcp_interface_t* m)
     if(!m)
         return ESP_ERR_INVALID_ARG;
 
-    return uart_driver_delete(m->uart_port);
+    ESP_RETURN_ON_ERROR(uart_driver_delete(m->uart_port), TAG, "Failed to uninstall UART driver");
+
+    ESP_RETURN_ON_ERROR(
+        gpio_isr_handler_remove(MTCP_GPIO_CTS_MON_PIN),
+        TAG, "Failed to remove ISR Watcher for GPIO %d", MTCP_GPIO_CTS_MON_PIN);
+
+    return ESP_OK;
 }
