@@ -4,6 +4,9 @@
 #include "io/voltage_reader.h"
 #include "mtcp/mtcp_interface.h"
 
+
+
+
 void app_main(void)
 {
  voltage_reader_t vrt = {
@@ -46,8 +49,9 @@ void app_main(void)
         int length = snprintf(buffer, sizeof(buffer), "Voltage: %.2f\r\n", vin);
         if(iface.is_active)
             uart_write_bytes(iface.uart_port, buffer, length);
-    // ESP_LOGI(TAG, "MTCP USB was %s", mif->is_active ? "plugged in" : "unplugged");
-        printf("USB %s\n", iface.is_active ? "plugged in" : "unplugged");
+        
+
+
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 

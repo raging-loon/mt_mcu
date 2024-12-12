@@ -53,15 +53,23 @@ static esp_err_t mtcp_if_init_uart(mtcp_interface_t* mif, const mtcp_if_cfg_t* i
     return ESP_OK;
 }
 
+
+///
+/// @brief
+///     This is called when there is a major voltage change
+///     on whatever GPIO pin the CTS pin on the USB module is connected to
+/// 
+/// @param[in] arg  A pointer to an mtcp_interface_t object
+///
 static void mtcp_if_usb_plug_isr_handler(void* arg)
 {
-    // gpio_intr_disable(MTCP_GPIO_CTS_MON_PIN);
     int cts_state = gpio_get_level(MTCP_GPIO_CTS_MON_PIN);
-    // gpio_set_level(MTCP_GPIO_CTS_MON_PIN, cts_state);
     mtcp_interface_t* mif = (mtcp_interface_t*)(arg);
-    mif->is_active = (cts_state == 0);
 
-    // gpio_intr_enable(MTCP_GPIO_CTS_MON_PIN);
+    if(cts_state == 0)
+        mif->flags |= (MTCP_IF_FLAG_CONNECTED | MTCP_IF_FLAG_NEW_CONNECTION);        
+    else
+        mif->flags |= (MTCP_IF_FLAG_DISCONNECTED | MTCP_IF_FLAG_CONNECTION_LOST);        
 
 }
 
