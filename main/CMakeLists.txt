@@ -5,6 +5,7 @@ set(IO_SOURCES
 
 set(MTCP_SOURCES
     "mtcp/mtcp_interface.c"
+    "mtcp/mtcp_task.c"
 )
 
 idf_component_register(

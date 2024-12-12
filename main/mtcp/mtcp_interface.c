@@ -3,6 +3,8 @@
 #include <esp_err.h>
 #include <esp_check.h>
 #include <esp_intr_alloc.h>
+#include <string.h>
+
 static const char* TAG = "MTCP_IF";
 
 ///
@@ -68,9 +70,13 @@ static void mtcp_if_usb_plug_isr_handler(void* arg)
     mtcp_interface_t* mif = (mtcp_interface_t*)(arg);
 
     if(cts_state == 0)
-        mif->flags |= (MTCP_IF_FLAG_CONNECTED | MTCP_IF_FLAG_NEW_CONNECTION);        
+        mif->flags |= (MTCP_IF_FLAG_PLUGGED_IN | MTCP_IF_FLAG_NEW_CONNECTION);        
     else
-        mif->flags |= (MTCP_IF_FLAG_DISCONNECTED | MTCP_IF_FLAG_CONNECTION_LOST);        
+    {
+        mif->flags |= MTCP_IF_FLAG_CONNECTION_LOST;        
+        // clear pluggeed in flag
+        mif->flags &= ~(MTCP_IF_FLAG_PLUGGED_IN | MTCP_IF_FLAG_NEW_CONNECTION);
+    }
 
 }
 
@@ -95,6 +101,7 @@ static esp_err_t mtcp_if_install_isr_watcher(mtcp_interface_t* mif, const mtcp_i
         .pull_up_en = GPIO_PULLUP_ENABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE
     };
+
     ESP_RETURN_ON_ERROR(gpio_config(&cfg), TAG, "ISR Installation: GPIO CFG Failed");
     ESP_RETURN_ON_ERROR(
         gpio_isr_handler_add(MTCP_GPIO_CTS_MON_PIN, mtcp_if_usb_plug_isr_handler, (void*)mif),
@@ -102,6 +109,10 @@ static esp_err_t mtcp_if_install_isr_watcher(mtcp_interface_t* mif, const mtcp_i
     );
     ESP_LOGI(TAG, "Installed MTCP ISR Interrupt");
     gpio_intr_enable(MTCP_GPIO_CTS_MON_PIN);
+    
+    // Call the ISR now, the PC may be connected at boot
+    mtcp_if_usb_plug_isr_handler((void*)mif);
+
     return ESP_OK;
 }
 
@@ -110,6 +121,8 @@ esp_err_t mtcp_if_init(mtcp_interface_t* mif, const mtcp_if_cfg_t* ifcfg)
     if(!mif || !ifcfg)
         return ESP_ERR_INVALID_ARG;
     
+    memset(mif, 0, sizeof(mtcp_interface_t));    
+
     ESP_RETURN_ON_ERROR(
         mtcp_if_init_uart(mif, ifcfg), TAG, "Failed to initialiaze UART"
     );
@@ -122,7 +135,7 @@ esp_err_t mtcp_if_init(mtcp_interface_t* mif, const mtcp_if_cfg_t* ifcfg)
 }
 
 
-esp_err_t mtcp_destroy_interface(mtcp_interface_t* m)
+esp_err_t mtcp_if_destroy(mtcp_interface_t* m)
 {
     if(!m)
         return ESP_ERR_INVALID_ARG;

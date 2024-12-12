@@ -4,7 +4,8 @@
 #include <stdint.h>
 
 #include <driver/adc.h>
-
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
 ///
 /// @brief
 ///     Reader for a ADC compat. GPIO pin
@@ -46,6 +47,15 @@ int vrt_read_raw(const voltage_reader_t* reader);
 
 float vrt_read(const voltage_reader_t* reader);
 
+/// Voltage Reader task
+typedef struct 
+{
+    voltage_reader_t*    reader;
+    QueueHandle_t       output_queue;  
+} vrt_task_t;
+
+
+void voltage_reader_task(void* param);
 
 
 #endif // IO_VOLTAGE_READER_H_

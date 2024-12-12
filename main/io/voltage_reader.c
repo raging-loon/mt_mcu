@@ -1,5 +1,7 @@
 #include "voltage_reader.h"
-
+#include <freertos/freertos.h>
+#include <freertos/task.h>
+#include <esp_task_wdt.h>
 static float get_vlt_range_from_atten(int atten)
 {
     switch(atten) 
@@ -57,4 +59,19 @@ float vrt_read(const voltage_reader_t* reader)
         return vin_raw;
 
     return vin_raw * (reader->div_r1 + reader->div_r2) / reader->div_r2;
+}
+
+void voltage_reader_task(void* param)
+{
+    vrt_task_t* us = (vrt_task_t*)param;
+
+    float vin = 0.0f;
+    int iterations = 0;
+    while (1)
+    {
+        
+        vin = vrt_read(us->reader);
+        vTaskDelay(50 / portTICK_PERIOD_MS);       
+    }
+
 }

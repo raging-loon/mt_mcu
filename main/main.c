@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <freertos/FreeRTOS.h>
+#include <esp_task_wdt.h>
 #include "io/voltage_reader.h"
 #include "mtcp/mtcp_interface.h"
-
+#include "mtcp/mtcp_task.h"
 
 
 
@@ -40,20 +41,19 @@ void app_main(void)
         return;
     }
 
-      char buffer[32];
-    while (1) 
+    vrt_task_t task = {
+        .reader = &vrt,
+    };
+
+    task.output_queue = xQueueCreate(10, sizeof(float));
+
+    TaskHandle_t vrt_task;
+    xTaskCreate(voltage_reader_task, "Voltage Reader Task", 1000, &task, 1, &vrt_task);
+
+
+    while(1)
     {
-        float vin = vrt_read(&vrt);
-
-        memset(buffer, 0, sizeof(buffer));
-
-        int length = snprintf(buffer, sizeof(buffer), "Voltage: %.2f\r\n", vin);
-        if((iface.flags & MTCP_IF_FLAG_CONNECTED) == MTCP_IF_FLAG_CONNECTED)
-            uart_write_bytes(iface.uart_port, buffer, length);
-        
-
-
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 
 }
