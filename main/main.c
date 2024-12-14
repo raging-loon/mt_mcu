@@ -4,7 +4,6 @@
 #include <esp_task_wdt.h>
 #include "io/voltage_reader.h"
 #include "mtcp/mtcp_interface.h"
-#include "mtcp/mtcp_task.h"
 
 
 
@@ -40,15 +39,14 @@ void app_main(void)
         printf("failed to initialize MTCP\n");
         return;
     }
+    // vrt_task_t task = {
+    //     .reader = &vrt,
+    // };
 
-    vrt_task_t task = {
-        .reader = &vrt,
-    };
+    // task.output_queue = xQueueCreate(10, sizeof(float));
 
-    task.output_queue = xQueueCreate(10, sizeof(float));
-
-    TaskHandle_t vrt_task;
-    xTaskCreate(voltage_reader_task, "Voltage Reader Task", 1000, &task, 1, &vrt_task);
+    // TaskHandle_t vrt_task;
+    // xTaskCreate(voltage_reader_task, "Voltage Reader Task", 1000, &task, 1, &vrt_task);
 
 
     while(1)

@@ -1,19 +1,10 @@
 #ifndef MTCP_MTCP_INTERFACE_H_
 #define MTCP_MTCP_INTERFACE_H_
-
-#include <mtcp.h>
-#include <stdint.h>
 #include <driver/uart.h>
 #include <freertos/task.h>
+#include <freertos/semphr.h>
 
 #define MTCP_GPIO_CTS_MON_PIN           22
-
-
-typedef struct {
-
-} mtcp_conversation_t;
-
-
 
 typedef struct {
     /// UART Port. e.g. UART_NUM_2
@@ -55,7 +46,25 @@ typedef struct mtcp_interface
     uint8_t             flags;
     /// freertos task handle
     TaskHandle_t        task_handle;
+
+    /// Semaphore for handling MTCP start up/destruction
+    SemaphoreHandle_t   smphr;
+    
+
 } mtcp_interface_t;
+
+///
+/// @brief 
+///     Install an interrupt handler that will active the MTCP interface
+/// @details
+///     When the MCU gets connected to a PC, the USB Module will send data via the RX
+///     pin. When we receive that, 
+/// @param mif 
+/// @param ifcfg 
+///
+/// @return 
+///
+esp_err_t mtcp_if_install_isr_watcher(mtcp_interface_t* mif);
 
 ///
 /// @brief
@@ -83,6 +92,15 @@ esp_err_t mtcp_if_init(mtcp_interface_t* mif, const mtcp_if_cfg_t* ifcfg);
 ///
 esp_err_t mtcp_if_destroy(mtcp_interface_t* mif);
 
+///
+/// @brief
+///     This services monitors data received from the ISR watcher
+///     It will handle the installation of a UART driver
+///     and starting the handshake/rx-tx tasks
+/// 
+/// @param[in] mif      The interface
+///
+void mtcp_if_handler_service(mtcp_interface_t* mif);
 
-
+void mtcp_task_handshake(mtcp_interface_t* );
 #endif // MTCP_MTCP_INTERFACE_H_
