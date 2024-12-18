@@ -5,6 +5,8 @@
 #include <esp_intr_alloc.h>
 #include <string.h>
 #include <utils.h>
+#include <mtcp.h>
+
 static const char* TAG = "MTCP_IF";
 
 ///
@@ -85,18 +87,17 @@ static void mtcp_if_usb_plug_isr_handler(void* arg)
     BaseType_t  xHigherPriorityTaskWoken;
 
     xHigherPriorityTaskWoken = pdFALSE;
-    if(cts_state == 1 && !(MT_HAS_FLAG(mif->flags, MTCP_IF_FLAG_CONNECTED)))
+    if(cts_state == 1 && !MT_HAS_FLAG(mif->flags, MTCP_IF_FLAG_CONNECTED))
     {
 
         mif->flags |= (MTCP_IF_FLAG_PLUGGED_IN | MTCP_IF_FLAG_NEW_CONNECTION);      
         xSemaphoreGiveFromISR(mif->smphr, &xHigherPriorityTaskWoken);
-        // xTaskCreate(mtcp_task_handshake, "mtcp_handshake", 1000, arg, 1, NULL);  
     }
     else
     {
         if(mif->flags != 0)
         {
-            mif->flags |= MTCP_IF_FLAG_CONNECTION_LOST;        
+            mif->flags |= MTCP_IF_FLAG_CONNECTION_LOST | MTCP_IF_FLAG_UNPLUGGED;        
             // clear pluggeed in flag
             mif->flags &= ~(MTCP_IF_FLAG_PLUGGED_IN | MTCP_IF_FLAG_NEW_CONNECTION);
             xSemaphoreGiveFromISR(mif->smphr, &xHigherPriorityTaskWoken);
@@ -182,29 +183,97 @@ esp_err_t mtcp_if_destroy(mtcp_interface_t* m)
     return ESP_OK;
 }
 
+static void mtcp_if_print_flags(uint8_t flags)
+{
+    char buffer[1024];
+    memset(buffer, 0, sizeof(buffer));
+    if(MT_HAS_FLAG(flags, MTCP_IF_FLAG_CONNECTED))
+        strncat(buffer, "CONNECTED | ", 13);
+    if(MT_HAS_FLAG(flags, MTCP_IF_FLAG_CONNECTION_LOST))
+        strncat(buffer, "CONNECTION_LOST | ", 19);
+    if(MT_HAS_FLAG(flags, MTCP_IF_FLAG_NEW_CONNECTION))
+        strncat(buffer, "NEW_CONNECTION | ", 18);
+    if(MT_HAS_FLAG(flags, MTCP_IF_FLAG_DISCONNECTED))
+        strncat(buffer, "DISCONNECTED | ", 16);
+    if(MT_HAS_FLAG(flags, MTCP_IF_FLAG_PLUGGED_IN))
+        strncat(buffer, "PLUGGED IN | ", 14);
+    if(MT_HAS_FLAG(flags, MTCP_IF_FLAG_UNPLUGGED))
+        strncat(buffer, "UNPLUGGED | ", 13);
+    
+    ESP_LOGI(TAG, "Flags: %s", buffer);
+}
+
 
 
 void mtcp_if_handler_service(mtcp_interface_t* mif)
 {
     ESP_LOGI(TAG, "Started MTCP Handler Service");
+    TaskHandle_t h_handshake_task = NULL;
+
     while(1) 
     {
         if(xSemaphoreTake(mif->smphr, portMAX_DELAY) == pdPASS)
         {
-            if(MT_HAS_FLAG(mif->flags, MTCP_IF_FLAG_NEW_CONNECTION))
+            ESP_LOGI(TAG, "------------------------------------------");
+            mtcp_if_print_flags(mif->flags);
+            if(MT_HAS_FLAG(mif->flags, (MTCP_IF_FLAG_NEW_CONNECTION)))
             {
-                MT_CLEAR_FLAG(mif->flags, MTCP_IF_FLAG_NEW_CONNECTION);
+                MT_CLEAR_FLAG(mif->flags, (MTCP_IF_FLAG_NEW_CONNECTION | MTCP_IF_FLAG_DISCONNECTED | MTCP_IF_FLAG_CONNECTION_LOST));
                 mif->flags |= MTCP_IF_FLAG_CONNECTED;
                 ESP_LOGI(TAG, "Got a connection :O");
+                xTaskCreate(mtcp_task_handshake, "HANDSHAKE", 1000, (void*)mif, 1, &h_handshake_task);
 
             }
-            else if(MT_HAS_FLAG(mif->flags, MTCP_IF_FLAG_CONNECTION_LOST))
+            else if(MT_HAS_FLAG(mif->flags, MTCP_IF_FLAG_CONNECTION_LOST) & !MT_HAS_FLAG(mif->flags, MTCP_IF_FLAG_DISCONNECTED))
             {
-                MT_CLEAR_FLAG(mif->flags, MTCP_IF_FLAG_CONNECTION_LOST);
+                mif->flags |= MTCP_IF_FLAG_DISCONNECTED;
+                 MT_CLEAR_FLAG(mif->flags, (MTCP_IF_FLAG_NEW_CONNECTION | MTCP_IF_FLAG_CONNECTED));
                 ESP_LOGI(TAG, "Lost a connection : (");
 
             }
+            mtcp_if_print_flags(mif->flags);
+            ESP_LOGI(TAG, "------------------------------------------");
+
         }
 
     }
+}
+
+
+void mtcp_task_handshake(mtcp_interface_t* mif)
+{
+    mtcp_header_t header = {
+        .type = MTCP_FT_GREETING,
+        .data_size = 0
+    };
+    
+    vTaskDelay(pdMS_TO_TICKS(1000));
+
+    uart_write_bytes(mif->uart_port, &header, sizeof(header));
+    uart_wait_tx_done(mif->uart_port, pdMS_TO_TICKS(50));
+    ESP_LOGI(TAG, "Send Greeting");
+
+    memset(&header, 0, sizeof(header));
+
+    int read = uart_read_bytes(mif->uart_port, &header, sizeof(header), pdMS_TO_TICKS(10000));
+
+    if(read == -1)
+    {
+        ESP_LOGI(TAG, "Did not receive greeting in time");
+        MT_CLEAR_FLAG(mif->flags, MTCP_IF_FLAG_CONNECTED | MTCP_IF_FLAG_NEW_CONNECTION);
+        goto end_task;
+    }
+
+    if(header.type == MTCP_FT_GREETING)
+    {
+        ESP_LOGI(TAG, "Got greeting back");
+        mif->flags |= MTCP_IF_FLAG_CONNECTED;
+        MT_CLEAR_FLAG(mif->flags, MTCP_IF_FLAG_NEW_CONNECTION);
+    }
+
+end_task:
+
+    // NULL -> delete us
+    vTaskDelete(NULL);
+
 }

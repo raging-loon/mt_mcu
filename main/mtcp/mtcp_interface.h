@@ -19,11 +19,11 @@ typedef struct {
     int         queue_size;
 } mtcp_if_cfg_t;
 
-#define MTCP_IF_FLAG_NEW_CONNECTION     (1 << 1) /// Set as soon as a new device is plugged in
-#define MTCP_IF_FLAG_CONNECTION_LOST    (1 << 2) /// Set as soon as a device is unplugged       
-#define MTCP_IF_FLAG_CONNECTED          (1 << 3) /// Set when we have an active connection to the host application 
-#define MTCP_IF_FLAG_DISCONNECTED       (1 << 4) /// We no longer have a connection, e.g. the user closed the desktop app
-#define MTCP_IF_FLAG_PLUGGED_IN         (1 << 5) /// Set if a device is plugged in, but not necessarily sending data
+#define MTCP_IF_FLAG_NEW_CONNECTION     (1 << 0) /// Set as soon as a new device is plugged in
+#define MTCP_IF_FLAG_CONNECTION_LOST    (1 << 1) /// Set as soon as a device is unplugged       
+#define MTCP_IF_FLAG_CONNECTED          (1 << 2) /// Set when we have an active connection to the host application 
+#define MTCP_IF_FLAG_DISCONNECTED       (1 << 3) /// We no longer have a connection, e.g. the user closed the desktop app
+#define MTCP_IF_FLAG_PLUGGED_IN         (1 << 4) /// Set if a device is plugged in, but not necessarily sending data
 #define MTCP_IF_FLAG_UNPLUGGED          (1 << 5) /// Set if there is no device plugged in
 
 ///
