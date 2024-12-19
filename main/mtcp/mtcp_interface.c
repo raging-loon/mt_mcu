@@ -7,6 +7,7 @@
 #include <utils.h>
 #include <mtcp.h>
 
+#include <sdkconfig.h>
 static const char* TAG = "MTCP_IF";
 
 esp_err_t mtcp_if_init_uart(volatile mtcp_interface_t* mif)
@@ -25,9 +26,9 @@ esp_err_t mtcp_if_init_uart(volatile mtcp_interface_t* mif)
         .queue_size = 10,
         .rx_buffer_size = 1024 * 2,
         .tx_buffer_size = 1024 * 2,
-        .rx_gpio_num = MTCP_UART_RX_PIN,
-        .tx_gpio_num = MTCP_UART_TX_PIN,
-        .uart_port = MTCP_UART_NUM
+        .rx_gpio_num = CONFIG_MTCP_UART_RX_PIN,
+        .tx_gpio_num = CONFIG_MTCP_UART_TX_PIN,
+        .uart_port = CONFIG_MTCP_UART_PORT
     };
     ESP_LOGI(TAG, "Installing UART Driver (rx=%d, tx=%d)", ifcfg.rx_gpio_num, ifcfg.tx_gpio_num);
 

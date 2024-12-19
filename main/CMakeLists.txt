@@ -1,6 +1,7 @@
 
 set(IO_SOURCES
     "io/voltage_reader.c"
+    "scope/osc_scope.c"
 )
 
 set(MTCP_SOURCES

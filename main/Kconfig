@@ -1,0 +1,32 @@
+menu "MT MCU Configuration"
+
+    menu "MTCP Configuration"
+
+        config MTCP_UART_TX_PIN
+            int "UART TX GPIO"
+            default 17
+            help
+                GPIO Pin number for UART Transmission
+        
+        config MTCP_UART_RX_PIN
+            int "UART RX GPIO"
+            default 16
+            help
+                GPIO Pin number for UART receival
+
+        config MTCP_UART_DETECTION_PIN
+            int "UART Detection GPIO"
+            default 22
+            help
+                GPIO Pin number used for detecting whether 
+                a device is plugged in or not
+
+        config MTCP_UART_PORT
+            int "UART Port number: UART_NUM_<xx>"
+            default 2
+            help 
+                Maps to UART_NUM_<xx>
+
+
+    endmenu
+endmenu
