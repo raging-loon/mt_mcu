@@ -5,6 +5,9 @@
 #include <freertos/semphr.h>
 
 #define MTCP_GPIO_CTS_MON_PIN           22
+#define MTCP_UART_RX_PIN                16
+#define MTCP_UART_TX_PIN                17
+#define MTCP_UART_NUM                   UART_NUM_2
 
 typedef struct {
     /// UART Port. e.g. UART_NUM_2
@@ -93,6 +96,17 @@ esp_err_t mtcp_if_init(mtcp_interface_t* mif, const mtcp_if_cfg_t* ifcfg);
 esp_err_t mtcp_if_destroy(mtcp_interface_t* mif);
 
 ///
+/// @brief 
+///     Install a UART driver for mif->uart_port
+///
+/// @param[in] mif      MTCP Interface 
+/// @param[in] ifcfg    MTCP Interface Configuration
+///
+/// @return ESP_OK or error code
+///
+esp_err_t mtcp_if_init_uart(volatile mtcp_interface_t* mif);
+
+///
 /// @brief
 ///     This services monitors data received from the ISR watcher
 ///     It will handle the installation of a UART driver
@@ -100,7 +114,7 @@ esp_err_t mtcp_if_destroy(mtcp_interface_t* mif);
 /// 
 /// @param[in] mif      The interface
 ///
-void mtcp_if_handler_service(mtcp_interface_t* mif);
+void mtcp_if_handler_service(volatile mtcp_interface_t* mif);
 
-void mtcp_task_handshake(mtcp_interface_t* );
+void mtcp_task_handshake(volatile mtcp_interface_t* );
 #endif // MTCP_MTCP_INTERFACE_H_
